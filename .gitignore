@@ -1,0 +1,10 @@
+secrets.toml
+``` file in the root of the project. This file should contain the following:
+[connections.postgresql]
+dialect = "postgresql"
+host = "localhost"
+port = "5432"
+database = "xxx"
+username = "xxx"
+password = "xxx"
+```toml
