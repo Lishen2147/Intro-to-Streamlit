@@ -1,36 +1,34 @@
-import psycopg2
+import mysql.connector
 import streamlit as st
 import os
-import re
+import re  # Add this line to import the 're' module
 from dotenv import load_dotenv
 from streamlit_option_menu import option_menu
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Function to establish PostgreSQL connection
-def connect_to_postgresql():
+def connect_to_mysql():
     try:
-        conn = psycopg2.connect(
-            user=os.getenv('POSTGRES_USER'),
-            password=os.getenv('POSTGRES_PASSWORD'),
+        conn = mysql.connector.connect(
             host='localhost',
-            port='5432',
-            database=os.getenv('POSTGRES_DB')
+            user=os.getenv('MYSQL_USER'),
+            password=os.getenv('MYSQL_PASSWORD'),
+            database=os.getenv('MYSQL_DB')
         )
-        st.success("Connected to PostgreSQL database")
+        st.success("Connected to MySQL database")
         return conn
     except Exception as e:
-        st.error(f"Error connecting to PostgreSQL: {e}")
+        st.error(f"Error connecting to MySQL: {e}")
         return None
 
 # Function to check if table already exists
 def check_table_exists(cursor, table_name):
-    if table_name is None:
+    if not table_name:
         st.warning("Please enter a table name")
         return
 
-    cursor.execute(f"SELECT * FROM information_schema.tables WHERE table_name = '{table_name}'")
+    cursor.execute(f"SHOW TABLES LIKE '{table_name}'")
     return cursor.fetchone()
 
 # Function to create a table
@@ -41,17 +39,17 @@ def create_table(conn, cursor, table_name):
 
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-        id SERIAL PRIMARY KEY,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255),
         email VARCHAR(255)
         )
     """)
 
     conn.commit()
-    st.success(f"Table '{table_name}' created")
+    st.success(f"Table '{table_name}' Created and Connected")
 
 def main():
-    st.title("Streamlit with PostgreSQL")
+    st.title("Streamlit with MySQL")
 
     selected = option_menu(
         menu_title = None,
@@ -62,10 +60,10 @@ def main():
     )
 
     if selected == "Home":
-        st.write("Welcome to PostgreSQL CRUD Operations")
+        st.write("Welcome to the MySQL CRUD Operations")
 
     elif selected == "CRUD":
-        conn = connect_to_postgresql()
+        conn = connect_to_mysql()
         if conn is None:
             st.warning("Please check the connection parameters")
             st.stop()
@@ -93,7 +91,6 @@ def main():
                 usr_name = st.text_input("Enter Name")
                 usr_email = st.text_input("Enter Email")
 
-
                 if st.button("Add Record"):
                     if usr_name and usr_email:
                         if not re.match(r"[^@]+@[^@]+\.[^@]+", usr_email):
@@ -120,7 +117,7 @@ def main():
                             st.dataframe(records)
                         else:
                             st.info("No records found.")
-                    except psycopg2.connect.Error as e:
+                    except mysql.connector.Error as e:
                         st.error(f"Error executing SQL query: {e}")
 
             case "Update":
