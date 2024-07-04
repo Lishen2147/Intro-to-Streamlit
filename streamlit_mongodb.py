@@ -1,8 +1,9 @@
-import streamlit as st
-from pymongo import MongoClient
 import os
 import re
+import streamlit as st
+from bson import ObjectId
 from dotenv import load_dotenv
+from pymongo import MongoClient
 from streamlit_option_menu import option_menu
 
 # Load environment variables from .env file
@@ -16,9 +17,15 @@ def connect_to_mongo():
             port=int(os.getenv('MONGO_PORT')),
             serverSelectionTimeoutMS=5000  # 5 seconds timeout
         )
+
+        # Attempt to connect to the server to trigger any connection errors
+        client.server_info()
+
         db = client[os.getenv('MONGO_DB')]
         st.success("Connected to MongoDB database")
+
         return db
+
     except Exception as e:
         st.error(f"Error connecting to MongoDB: {e}")
         return None
@@ -28,6 +35,7 @@ def check_collection_exists(db, collection_name):
     if not collection_name:
         st.warning("Please enter a collection name")
         return False
+
     collection_list = db.list_collection_names()
     return collection_name in collection_list
 
@@ -36,8 +44,12 @@ def create_collection(db, collection_name):
     if not collection_name:
         st.warning("Please enter a collection name")
         return
-    db.create_collection(collection_name)
-    st.success(f"Collection '{collection_name}' created")
+
+    try:
+        db.create_collection(collection_name)
+        st.success(f"Collection '{collection_name}' created")
+    except Exception as e:
+        st.error(f"Error creating collection '{collection_name}': {e}")
 
 def main():
     st.title("Streamlit with MongoDB")
@@ -69,40 +81,46 @@ def main():
         collection = db[collection_name]
 
         operation = st.sidebar.selectbox("Select an Operation", (
-            "Create",
-            "Read",
+            "INSERT",
+            "Find",
             "Update",
             "Delete"))
 
         match operation:
-            case "Create":
-                st.subheader("Create a Record")
+            case "INSERT":
+                st.subheader("Insert a Record")
 
                 usr_name = st.text_input("Enter Name")
                 usr_email = st.text_input("Enter Email")
 
-                if st.button("Add Record"):
+                if st.button("Insert a Record"):
                     if usr_name and usr_email:
                         if not re.match(r"[^@]+@[^@]+\.[^@]+", usr_email):
                             st.warning("Invalid email format")
                             return
                         else:
-                            collection.insert_one({"name": usr_name, "email": usr_email})
-                            st.success("Record Added")
-                    else:
-                        st.warning("Please enter both name and email to create a record")
+                            # Generate a new unique ID
+                            new_id = str(ObjectId())
 
-            case "Read":
-                st.subheader("Read Records")
+                            # Insert the record with the generated ID
+                            collection.insert_one({"_id": new_id, "name": usr_name, "email": usr_email})
+                            st.success("Record inserted")
+                    else:
+                        st.warning("Please enter both name and email to insert a record")
+
+            case "Find":
+                st.subheader("Find Records")
 
                 try:
-                    records = list(collection.find({}, {"_id": 0}))
+                    records = list(collection.find({}, {"_id": 1, "name": 1, "email": 1})) # to include _id: 1 (to include _id)
                     if records:
+                        for record in records:
+                            record['_id'] = str(record['_id'])
                         st.dataframe(records)
                     else:
                         st.info("No records found.")
                 except Exception as e:
-                    st.error(f"Error reading records: {e}")
+                    st.error(f"Error finding records: {e}")
 
             case "Update":
                 st.subheader("Update a Record")
@@ -122,7 +140,7 @@ def main():
                         update_fields["email"] = usr_email
 
                     if update_fields:
-                        result = collection.update_one({"_id": record_id}, {"$set": update_fields})
+                        result = collection.update_one({"_id": ObjectId(record_id)}, {"$set": update_fields})
                         if result.modified_count:
                             st.success("Record Updated")
                         else:
@@ -136,7 +154,7 @@ def main():
                 record_id = st.text_input("Enter Record ID")
 
                 if st.button("Delete Record"):
-                    result = collection.delete_one({"_id": record_id})
+                    result = collection.delete_one({"_id": ObjectId(record_id)})
                     if result.deleted_count:
                         st.warning("Record Deleted")
                     else:

@@ -14,8 +14,8 @@ def connect_to_postgresql():
         conn = psycopg2.connect(
             user=os.getenv('POSTGRES_USER'),
             password=os.getenv('POSTGRES_PASSWORD'),
-            host='localhost',
-            port='5432',
+            host=os.getenv('POSTGRES_HOST'),
+            port=os.getenv('POSTGRES_PORT'),
             database=os.getenv('POSTGRES_DB')
         )
         st.success("Connected to PostgreSQL database")

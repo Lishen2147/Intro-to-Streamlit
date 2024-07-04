@@ -1,9 +1,10 @@
 #!/bin/bash
 
 # Prompt for root password and user password
-read -sp 'Enter MySQL root password: ' root_password
+echo "Define MySQL ROOT and STREAMLIT_USER passwords."
+read -sp 'Enter your desired password for root: ' root_password
 echo
-read -sp 'Enter MySQL user password: ' user_password
+read -sp 'Enter your desired password for streamlit_user: ' user_password
 echo
 
 # Update the package index
@@ -37,10 +38,24 @@ EOF
 # Print success message
 echo "MySQL has been installed and configured successfully."
 
-# Output PostgreSQL connection parameters to .env file
-echo "MYSQL_USER=streamlit_user" >> .env
-echo "MYSQL_PASSWORD=$user_password" >> .env
-echo "MYSQL_DB=streamlit_db" >> .env
+# Output PostgreSQL connection parameters to .env file if they don't exist
+if ! grep -q "MYSQL_USER=" .env; then
+    echo "MYSQL_USER=streamlit_user" >> .env
+else
+    sed -i 's/^MYSQL_USER=.*/MYSQL_USER=streamlit_user/' .env
+fi
+
+if ! grep -q "MYSQL_PASSWORD=" .env; then
+    echo "MYSQL_PASSWORD=$user_password" >> .env
+else
+    sed -i "s/^MYSQL_PASSWORD=.*/MYSQL_PASSWORD=$user_password/" .env
+fi
+
+if ! grep -q "MYSQL_DB=" .env; then
+    echo "MYSQL_DB=streamlit_db" >> .env
+else
+    sed -i 's/^MYSQL_DB=.*/MYSQL_DB=streamlit_db/' .env
+fi
 
 # Print success message
 echo "PostgreSQL connection parameters written to .env file."

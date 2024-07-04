@@ -27,9 +27,35 @@ echo "host    all             all             0.0.0.0/0               md5" | sud
 sudo systemctl restart postgresql
 
 # Output PostgreSQL connection parameters to .env file
-echo "POSTGRES_USER=streamlit_user" >> .env
-echo "POSTGRES_PASSWORD=$user_password" >> .env
-echo "POSTGRES_DB=streamlit_db" >> .env
+if ! grep -q "POSTGRES_HOST=" .env; then
+    echo "POSTGRES_HOST=localhost" >> .env
+else
+    sed -i 's/^POSTGRES_HOST=.*/POSTGRES_HOST=localhost/' .env
+fi
+
+if ! grep -q "POSTGRES_PORT=" .env; then
+    echo "POSTGRES_PORT=5432" >> .env
+else
+    sed -i 's/^POSTGRES_PORT=.*/POSTGRES_PORT=5432/' .env
+fi
+
+if ! grep -q "POSTGRES_USER=" .env; then
+    echo "POSTGRES_USER=streamlit_user" >> .env
+else
+    sed -i 's/^POSTGRES_USER=.*/POSTGRES_USER=streamlit_user/' .env
+fi
+
+if ! grep -q "POSTGRES_PASSWORD=" .env; then
+    echo "POSTGRES_PASSWORD=$user_password" >> .env
+else
+    sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$user_password/" .env
+fi
+
+if ! grep -q "POSTGRES_DB=" .env; then
+    echo "POSTGRES_DB=streamlit_db" >> .env
+else
+    sed -i 's/^POSTGRES_DB=.*/POSTGRES_DB=streamlit_db/' .env
+fi
 
 # Print success message
 echo "PostgreSQL connection parameters written to .env file."
