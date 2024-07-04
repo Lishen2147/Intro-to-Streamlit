@@ -53,4 +53,4 @@ echo "Python dependencies installed successfully."
 
 echo "Installation and configuration complete. You can now run your Streamlit application."
 
-echo "Run this command to start your Streamlit application: streamlit run streamlit_mysql.py"
+echo -e "Run this command to start your Streamlit application: \e[32mstreamlit run streamlit_mysql.py\e[0m"
